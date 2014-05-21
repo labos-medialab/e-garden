@@ -1,46 +1,53 @@
-#define valve 13
-#define heat 21
-#define light 22
-
-int moisture1;
-int moisture2;
-int moisture3;
-
 void setup() {
   Serial.begin(9600);
-  pinMode(heat, OUTPUT); digitalWrite(heat, HIGH);
-  pinMode(valve, OUTPUT); digitalWrite(valve, HIGH);
-  pinMode(light, OUTPUT); digitalWrite(light, HIGH);
 }
 
-void loop() {
-  moisture1=analogRead(A0);
-  moisture2=analogRead(A1);
-  moisture3=analogRead(A2);
-}
+void loop() {}
 
-void serialEvent(){
+void serialEvent() {
   String dataString="";
-  while(Serial.available()>0){
+  if(Serial.available() > 0)
     dataString=Serial.readStringUntil(';');
-    if(dataString.startsWith("get")) getData();
-    else if(dataString.startsWith("heatON")) digitalWrite(heat,LOW);
-    else if(dataString.startsWith("heatOFF")) digitalWrite(heat,HIGH);
-    else if(dataString.startsWith("lightON")) digitalWrite(light,LOW);
-    else if(dataString.startsWith("lightOFF")) digitalWrite(light,HIGH);
-    else if(dataString.startsWith("valve:")){
-      dataString = dataString.substring(dataString.indexOf(":")+1,dataString.length());
-      digitalWrite(valve,LOW);
-      delay(dataString.toInt());
-      digitalWrite(valve,HIGH);
-    }
-    else Serial.write("WRONG COMAND!\nFUCKER!!!\n");
+  if(dataString.startsWith("pinMode")){
+    dataString=dataString.substring(dataString.indexOf("(")+1,dataString.length());
+    int pin=dataString.toInt();
+    dataString=dataString.substring(dataString.indexOf(",")+1,dataString.indexOf(")"));
+    if(dataString=="INPUT" || dataString=="0") pinMode(pin,INPUT);
+    else if(dataString=="OUTPUT" || dataString=="1") pinMode(pin,OUTPUT);
+    else if(dataString=="INPUT_PULLPU" || dataString=="2") pinMode(pin,INPUT_PULLUP);
+    else Serial.write("wrong mode\n");
   }
-}
-
-void getData(){
- // delay(50);
-  Serial.write("m1:");Serial.print(moisture1);Serial.write("\n");
-  Serial.write("m2:");Serial.print(moisture2);Serial.write("\n");
-  Serial.write("m3:");Serial.print(moisture3);Serial.write("\n");
+  else if(dataString.startsWith("digitalWrite")){
+    dataString=dataString.substring(dataString.indexOf("(")+1,dataString.indexOf(")"));
+    int pin=dataString.toInt();
+    dataString=dataString.substring(dataString.indexOf(",")+1,dataString.indexOf(")"));
+    if(dataString=="HIGH" || dataString=="1") digitalWrite(pin,HIGH);
+    else if(dataString=="LOW" || dataString=="0") digitalWrite(pin,LOW);
+    else Serial.write("wrong mode\n");
+  }
+  else if(dataString.startsWith("digitalRead")){
+    dataString=dataString.substring(dataString.indexOf("(")+1,dataString.indexOf(")"));
+    int pin=dataString.toInt();
+    Serial.println(digitalRead(pin));
+  }
+  else if(dataString.startsWith("analogRead")){
+    if(dataString.indexOf('A')<0){
+      dataString=dataString.substring(dataString.indexOf("(")+1,dataString.indexOf(")"));
+      int pin=dataString.toInt();
+      Serial.println(analogRead(pin));
+    }
+    else{
+      dataString=dataString.substring(dataString.indexOf("A")+1,dataString.indexOf(")"));
+      int pin=dataString.toInt()+54;
+      Serial.println(analogRead(pin));
+    }
+  }
+  else if(dataString.startsWith("analogWrite")){
+    dataString=dataString.substring(dataString.indexOf("(")+1,dataString.length());
+    int pin=dataString.toInt();
+    dataString=dataString.substring(dataString.indexOf(",")+1,dataString.indexOf(")"));
+    int value=dataString.toInt();
+    analogWrite(pin,value);
+  }
+  else Serial.write("wrong input\n");
 }
